@@ -58,7 +58,11 @@ nextButton.addEventListener('click', () => {
 
 async function enableEditing(pageNum) {
     const canvas = document.querySelector('.page-canvas');
+    const dataURL = canvas.toDataURL();
     fabricCanvas = new fabric.Canvas(canvas, { selection: true });
+    fabric.Image.fromURL(dataURL, img => {
+        fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
+    });
     const page = await pdfDoc.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1.5 });
     const opList = await page.getOperatorList();
