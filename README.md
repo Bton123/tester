@@ -21,7 +21,11 @@ This is a simple web application that allows uploading a PDF and viewing it in t
 
 ## Usage
 
-1. Open `index.html` in a modern browser.
+1. Start a simple local server, for example:
+   ```bash
+   python3 -m http.server
+   ```
+   Then open `http://localhost:8000/index.html` in your browser.
 2. Select a PDF file using the upload input.
 3. Use **Prev** and **Next** to switch pages.
 4. Click **Scan This Page** to enable editing for the page in view. Detected rectangles and circles become editable.
