@@ -24,7 +24,7 @@ async function renderPage(pageNum) {
     const page = await pdfDoc.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1.5 });
     const canvas = document.createElement('canvas');
-    canvas.className = 'page-canvas';
+    canvas.className = 'pdf-canvas';
     const context = canvas.getContext('2d');
     canvas.height = viewport.height;
     canvas.width = viewport.width;
@@ -57,7 +57,7 @@ nextButton.addEventListener('click', () => {
 });
 
 async function enableEditing(pageNum) {
-    const canvas = document.querySelector('.page-canvas');
+    const canvas = document.querySelector('.pdf-canvas');
     const dataURL = canvas.toDataURL();
     fabricCanvas = new fabric.Canvas(canvas, { selection: true });
     fabric.Image.fromURL(dataURL, img => {
