@@ -4,6 +4,11 @@ const scanButton = document.getElementById('scan-button');
 const prevButton = document.getElementById('prev-page');
 const nextButton = document.getElementById('next-page');
 const pageInfo = document.getElementById('page-info');
+// Configure the worker source for pdf.js to match the CDN version used in
+// index.html. Without this setting, pdf.js will attempt to load the worker
+// script relative to the page which can fail when running from a file URL.
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.8.162/pdf.worker.min.js';
 let pdfDoc = null;
 let currentPage = 1;
 let fabricCanvas = null;
