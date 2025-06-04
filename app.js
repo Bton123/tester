@@ -17,12 +17,17 @@ fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
         const url = URL.createObjectURL(file);
-        pdfDoc = await pdfjsLib.getDocument(url).promise;
-        currentPage = 1;
-        renderPage(currentPage);
-        updatePageInfo();
+        await renderPDF(url);
+        URL.revokeObjectURL(url);
     }
 });
+
+async function renderPDF(url) {
+    pdfDoc = await pdfjsLib.getDocument(url).promise;
+    currentPage = 1;
+    await renderPage(currentPage);
+    updatePageInfo();
+}
 
 async function renderPage(pageNum) {
     pdfViewer.innerHTML = '';
