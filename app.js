@@ -1,47 +1,68 @@
 const fileInput = document.getElementById('file-input');
 const pdfViewer = document.getElementById('pdf-viewer');
 const scanButton = document.getElementById('scan-button');
+const prevButton = document.getElementById('prev-page');
+const nextButton = document.getElementById('next-page');
+const pageInfo = document.getElementById('page-info');
 let pdfDoc = null;
+let currentPage = 1;
+let fabricCanvas = null;
 
 fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
         const url = URL.createObjectURL(file);
         pdfDoc = await pdfjsLib.getDocument(url).promise;
-        renderPDF();
+        currentPage = 1;
+        renderPage(currentPage);
+        updatePageInfo();
     }
 });
 
-async function renderPDF() {
+async function renderPage(pageNum) {
     pdfViewer.innerHTML = '';
-    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-        const page = await pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvas = document.createElement('canvas');
-        canvas.className = 'page-canvas';
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: context, viewport: viewport }).promise;
-        pdfViewer.appendChild(canvas);
-    }
+    const page = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 1.5 });
+    const canvas = document.createElement('canvas');
+    canvas.className = 'page-canvas';
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    await page.render({ canvasContext: context, viewport: viewport }).promise;
+    pdfViewer.appendChild(canvas);
+    fabricCanvas = null;
+}
+
+function updatePageInfo() {
+    pageInfo.textContent = `${currentPage} / ${pdfDoc.numPages}`;
 }
 
 scanButton.addEventListener('click', () => {
     if (!pdfDoc) return;
-    enableEditing();
+    enableEditing(currentPage);
 });
 
-async function enableEditing() {
-    const canvases = document.querySelectorAll('.page-canvas');
-    for (let pageNum = 1; pageNum <= canvases.length; pageNum++) {
-        const canvas = canvases[pageNum - 1];
-        const fabricCanvas = new fabric.Canvas(canvas, { selection: true });
-        const page = await pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.5 });
-        const opList = await page.getOperatorList();
-        parseOperatorList(opList, viewport, fabricCanvas);
-    }
+prevButton.addEventListener('click', () => {
+    if (!pdfDoc || currentPage === 1) return;
+    currentPage--;
+    renderPage(currentPage);
+    updatePageInfo();
+});
+
+nextButton.addEventListener('click', () => {
+    if (!pdfDoc || currentPage === pdfDoc.numPages) return;
+    currentPage++;
+    renderPage(currentPage);
+    updatePageInfo();
+});
+
+async function enableEditing(pageNum) {
+    const canvas = document.querySelector('.page-canvas');
+    fabricCanvas = new fabric.Canvas(canvas, { selection: true });
+    const page = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 1.5 });
+    const opList = await page.getOperatorList();
+    parseOperatorList(opList, viewport, fabricCanvas);
 }
 
 function parseOperatorList(opList, viewport, fabricCanvas) {
