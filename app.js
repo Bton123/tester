@@ -32,19 +32,61 @@ scanButton.addEventListener('click', () => {
     enableEditing();
 });
 
-function enableEditing() {
+async function enableEditing() {
     const canvases = document.querySelectorAll('.page-canvas');
-    canvases.forEach((canvas) => {
+    for (let pageNum = 1; pageNum <= canvases.length; pageNum++) {
+        const canvas = canvases[pageNum - 1];
         const fabricCanvas = new fabric.Canvas(canvas, { selection: true });
-        // Placeholder: actual element detection not implemented
-        // Example: Add a movable circle for demonstration
-        const circle = new fabric.Circle({
-            left: 50,
-            top: 50,
-            radius: 30,
-            fill: 'rgba(255,0,0,0.3)',
-            stroke: 'red',
-        });
-        fabricCanvas.add(circle);
-    });
+        const page = await pdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const opList = await page.getOperatorList();
+        parseOperatorList(opList, viewport, fabricCanvas);
+    }
+}
+
+function parseOperatorList(opList, viewport, fabricCanvas) {
+    const DrawOPS = { moveTo: 0, lineTo: 1, curveTo: 2, closePath: 3 };
+    const { fnArray, argsArray } = opList;
+    for (let i = 0; i < fnArray.length; i++) {
+        const fn = fnArray[i];
+        const args = argsArray[i];
+        if (fn === pdfjsLib.OPS.rectangle) {
+            const [x, y, w, h] = args;
+            const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle([x, y, x + w, y + h]);
+            const rect = new fabric.Rect({
+                left: Math.min(vx1, vx2),
+                top: Math.min(vy1, vy2),
+                width: Math.abs(vx2 - vx1),
+                height: Math.abs(vy2 - vy1),
+                fill: 'rgba(0,0,255,0.1)',
+                stroke: 'blue',
+            });
+            fabricCanvas.add(rect);
+        } else if (fn === pdfjsLib.OPS.constructPath) {
+            const [drawOp, [pathBuffer], minMax] = args;
+            if (!pathBuffer || !minMax) continue;
+            const ops = [];
+            for (let j = 0; j < pathBuffer.length;) {
+                const op = pathBuffer[j++];
+                ops.push(op);
+                if (op === DrawOPS.moveTo || op === DrawOPS.lineTo) {
+                    j += 2;
+                } else if (op === DrawOPS.curveTo) {
+                    j += 6;
+                }
+            }
+            if (ops.length === 6 && ops[0] === DrawOPS.moveTo && ops[5] === DrawOPS.closePath && ops.slice(1,5).every(o => o === DrawOPS.curveTo)) {
+                const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle(minMax);
+                const ellipse = new fabric.Ellipse({
+                    left: Math.min(vx1, vx2),
+                    top: Math.min(vy1, vy2),
+                    rx: Math.abs(vx2 - vx1) / 2,
+                    ry: Math.abs(vy2 - vy1) / 2,
+                    fill: 'rgba(255,0,0,0.1)',
+                    stroke: 'red',
+                });
+                fabricCanvas.add(ellipse);
+            }
+        }
+    }
 }
